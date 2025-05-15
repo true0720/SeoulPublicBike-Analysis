@@ -1,0 +1,60 @@
+
+import pandas as pd
+df = pd.read_csv("C:/Users/izoas/Downloads/tpss_bcycl_od_statnhm_20250507/tpss_bcycl_od_statnhm_20250507.csv", encoding='cp949')
+
+file_name = "C:/Users/izoas/Downloads/tpss_bcycl_od_statnhm_20250507/tpss_bcycl_od_statnhm_20250507.csv"
+
+# 2. 인코딩 자동 탐지로 읽기
+for enc in ['euc-kr', 'cp949', 'utf-8']:
+    try:
+        df = pd.read_csv(file_name, encoding=enc)
+        break
+    except:
+        continue
+
+# 3. 열 이름 영어로 변경
+df = df.rename(columns={
+    '기준_날짜': 'RENT_DATE',
+    '기준_시간대': 'RENT_TIME',
+    '시작_대여소명': 'RENT_STATION_NAME',
+    '종료_대여소명': 'RETURN_STATION_NAME',
+    '전체_건수': 'RENT_COUNT',
+    '전체_이용_분': 'RENT_DURATION_MIN',
+    '전체_이용_거리': 'RENT_DISTANCE_METER'
+})
+
+# 4. 시간 파싱 및 시간대 그룹화
+df['RENT_DATE'] = pd.to_datetime(df['RENT_DATE'], format='%Y%m%d')
+df['hour'] = df['RENT_TIME'].astype(str).str.zfill(4).str[:2].astype(int)
+
+def group_time(hour):
+    if 6 <= hour < 9:
+        return '06~09'
+    elif 9 <= hour < 12:
+        return '09~12'
+    elif 12 <= hour < 15:
+        return '12~15'
+    elif 15 <= hour < 18:
+        return '15~18'
+    elif 18 <= hour < 21:
+        return '18~21'
+    else:
+        return '기타'
+
+df['time_slot'] = df['hour'].apply(group_time)
+
+# 5. 피벗 테이블 생성: 모든 대여소의 시간대별 대여건수 요약
+pivot_table = pd.pivot_table(
+    df,
+    values='RENT_COUNT',
+    index='RENT_STATION_NAME',
+    columns='time_slot',
+    aggfunc='sum',
+    fill_value=0
+)
+
+# 6. 결과 출력
+print("모든 대여소의 시간대별 대여 건수 요약표:")
+print(pivot_table)
+
+
