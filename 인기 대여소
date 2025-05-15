@@ -1,0 +1,16 @@
+import pandas as pd
+
+# CSV 불러오기
+df = pd.read_csv("rent_summary_by_station_timeslot_cp949.csv", encoding='cp949')
+
+# 시간대 컬럼 리스트
+time_columns = ['06~09', '09~12', '12~15', '15~18', '18~21', '기타']
+
+# 전체 대여 건수 계산
+df['total'] = df[time_columns].sum(axis=1)
+
+# 인기 대여소 출력
+top_stations = df[['RENT_STATION_NAME', 'total']].sort_values(by='total', ascending=False)
+print(top_stations)
+
+top_stations.to_excel("stations.xlsx", index=False)
